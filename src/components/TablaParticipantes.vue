@@ -1,70 +1,8 @@
 <template>
-  <!-- mx auto cemtra automaticamente y asigna un ancho según contenido -->
+  <!-- mx auto centra automaticamente y asigna un ancho según contenido -->
+
   <v-card class="mx-auto" outlined>
-    <!-- encabezado tabla: descripción, búsqueda, añadir... -->
-
-    <v-card-title>
-      Participantes
-      <v-spacer></v-spacer>
-      <v-text-field
-        v-model="search"
-        append-icon="mdi-magnify"
-        label="Search"
-        single-line
-        hide-details
-      ></v-text-field>
-      <v-spacer></v-spacer>
-
-      <!-- botón añadir nuevo -->
-      <v-flex class="mt-4 mb-3">
-        <v-dialog v-model="dialog" max-width="500px">
-          <template v-slot:activator="{ on }">
-            <v-btn color="primary" dark class="mb-2" v-on="on">Add new</v-btn>
-          </template>
-
-          <!-- popup -->
-          <v-card>
-            <v-card-title>
-              <span class="headline">{{ tituloFormulario }}</span>
-            </v-card-title>
-            <!-- zona texto/datos -->
-            <v-card-text>
-              <v-container>
-                <v-row>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field v-model="participanteEditar.firstname" label="First Name"></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field v-model="participanteEditar.lastname" label="Last Name"></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field v-model="participanteEditar.email" label="Email"></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field v-model="participanteEditar.created" label="Created"></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field v-model="participanteEditar.paymentopt" label="Payment"></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field v-model="participanteEditar.state" label="State"></v-text-field>
-                  </v-col>
-                </v-row>
-              </v-container>
-            </v-card-text>
-
-            <v-card-actions>
-              <v-spacer></v-spacer>
-              <v-btn color="blue darken-1" text @click="close">Cancel</v-btn>
-              <v-btn color="blue darken-1" text @click="save">Save</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-      </v-flex>
-    </v-card-title>
-
-    <!-- JSON v-for keko in participantes... ?? ------------------------------------------------------->
-    <!-- prop show-select para seleccionar uno/varios elementos -->
+    <!-- data-table -->
     <v-data-table
       :headers="cabecera"
       :items="participantes"
@@ -72,13 +10,125 @@
       :sort-desc="[false, true]"
       :search="search"
       multi-sort
-      show-select
     >
+      <!-- encabezado tabla: descripción, búsqueda, añadir... -->
+      <template v-slot:top>
+        <v-card-title>
+          Participantes
+          <v-spacer></v-spacer>
+
+          <v-spacer></v-spacer>
+
+          <!-- search bar -->
+          <v-text-field
+            v-model="search"
+            append-icon="mdi-magnify"
+            label="Search"
+            single-line
+            hide-details
+          ></v-text-field>
+
+          <v-spacer></v-spacer>
+
+          <!-- botón añadir nuevo -->
+          <v-flex class="mt-4 mb-3">
+            <v-dialog v-model="dialog" max-width="750px">
+              <template v-slot:activator="{ on }">
+                <v-btn color="primary" dark class="mb-2" v-on="on">Add new</v-btn>
+              </template>
+
+              <!-- popup New Data/Edit data-->
+              <v-card>
+                <v-card-title>
+                  <span class="headline">{{ tituloFormulario }}</span>
+                </v-card-title>
+
+                <!-- zona texto/datos -->
+                <v-card-text>
+                  <v-container>
+                    <v-row>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-text-field v-model="participanteEditar.firstname" label="First Name"></v-text-field>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-text-field v-model="participanteEditar.lastname" label="Last Name"></v-text-field>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-text-field v-model="participanteEditar.email" label="Email"></v-text-field>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="4">
+                        <!-- menu para date pick -->
+                        <v-menu
+                          ref="menu"
+                          v-model="menu"
+                          :close-on-content-click="false"
+                          :return-value.sync="date"
+                          transition="scale-transition"
+                          offset-y
+                          min-width="290px"
+                        >
+                          <template v-slot:activator="{ on }">
+                            <v-text-field
+                              v-model="participanteEditar.created"
+                              label="Created in..."
+                              prepend-icon="event"
+                              readonly
+                              v-on="on"
+                            ></v-text-field>
+                          </template>
+                          <v-date-picker v-model="participanteEditar.created" no-title scrollable>
+                            <v-spacer></v-spacer>
+                            <v-btn text color="primary" @click="menu = false">Cancel</v-btn>
+                            <v-btn text color="primary" @click="$refs.menu.save(date)">OK</v-btn>
+                          </v-date-picker>
+                        </v-menu>
+                      </v-col>
+
+                      <!-- select para elegir tipo de pago -->
+                      <v-col cols="12" sm="6" md="4">
+                        <v-select
+                          v-model="participanteEditar.paymentopt"
+                          :items="dropdown_payment"
+                          menu-props="auto"
+                          label="Payment option"
+                          hide-details
+                          prepend-icon="mdi-currency-eur"
+                          single-line
+                        ></v-select>
+                      </v-col>
+
+                      <!-- select para state -->
+                      <v-col cols="12" sm="6" md="4">
+                        <v-select
+                          v-model="participanteEditar.state"
+                          :items="dropdown_state"
+                          menu-props="auto"
+                          label="State"
+                          hide-details
+                          prepend-icon="mdi-set-none"
+                          single-line
+                        ></v-select>
+                      </v-col>
+                    </v-row>
+                  </v-container>
+                </v-card-text>
+
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn color="blue darken-1" text @click="close">Cancel</v-btn>
+                  <v-btn color="blue darken-1" text @click="save">Save</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+          </v-flex>
+        </v-card-title>
+      </template>
+
       <!-- email format -->
       <template v-slot:item.email="{ item }">
         <a :href="'mailto:' + item.email">{{item.email}}</a>
       </template>
-      
+
       <!-- iconos payment -->
       <template v-slot:item.paymentopt="{ item }">
         <v-icon>{{ getPaymentIcon(item.paymentopt) }}</v-icon>
@@ -94,139 +144,184 @@
         <v-icon small class="mr-2" @click="editItem(item)">mdi-pencil</v-icon>
         <v-icon small @click="deleteItem(item)">mdi-delete</v-icon>
       </template>
+      <!-- test CUSTOM FILTER -->
+      <template v-slot:body.append>
+        <tr>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td>
+            <!-- menu para DATE RANGE pick -->
+            <v-menu
+              ref="menu"
+              v-model="menu"
+              :close-on-content-click="false"
+              transition="scale-transition"
+              offset-y
+              min-width="290px"
+            >
+              <template v-slot:activator="{ on }">
+                <v-text-field
+                  v-model="dateSearch"
+                  label="Search between..."
+                  prepend-icon="event"
+                  readonly
+                  v-on="on"
+                ></v-text-field>
+              </template>
+
+              <v-date-picker no-title v-model="dateSearch" range>
+                <v-spacer></v-spacer>
+                <v-btn text color="primary" @click="menu = false">Cancel</v-btn>
+                <v-btn text color="primary" @click="$refs.menu.save(date)">OK</v-btn>
+                <!-- @click="$refs.menu.save(date)" -->
+              </v-date-picker>
+            </v-menu>
+          </td>
+          <td></td>
+          <td>
+            <v-select v-model="state" 
+            :items="dropdown_state"
+            menu-props="auto"
+            hide-details
+            prepend-icon="mdi-set-none"
+            multiple
+            label="Filter by State"></v-select>
+          </td>
+
+          <td colspan="3"></td>
+        </tr>
+      </template>
     </v-data-table>
   </v-card>
 </template>
 
 
 <script>
-//import AddNew from "./AddNew";
-
 export default {
   data: () => ({
     dialog: false,
+    dropdown_payment: ["Cash", "Credit Card", "Sofort"],
+    dropdown_state: ["Waiting List", "Completed", "Enrolled"],
     search: "",
-    cabecera: [
-      {
-        text: "First Name",
-        align: "start",
-        value: "firstname",
-        filterable: false
-      } /*prop filterable para que no se encuentre en el search*/,
-
-      { text: "Last Name", value: "lastname", filterable: false },
-
-      { text: "Email", value: "email", filterable: true },
-
-      /* date format---- pendiente */
-      { text: "Created", value: "created", filterable: false },
-
-      { text: "Payment", value: "paymentopt", filterable: false },
-
-      { text: "State", value: "state", filterable: false },
-
-      /* edit / delete */
-      { text: "Actions", value: "actions", sortable: false }
-    ],
+    state: [],
+    dateSearch: [],
+    date: new Date().toISOString().substr(0, 10),
+    menu: false,
+    modal: false,
+    menu2: false,
 
     participantes: [
       {
         firstname: "Ken",
         lastname: "Masters",
         email: "srken@capcom.com",
-        created: "11/11/11",
-        paymentopt: "ccard",
-        state: "waitinglist"
+        id: "0184",
+        created: "2011-11-11",
+        paymentopt: "Credit Card",
+        state: "Waiting List"
       },
       {
         firstname: "Booker",
         lastname: "DeWitt",
         email: "booker@columbia.us",
-        created: "11/11/11",
-        paymentopt: "ccard",
-        state: "completed"
+        id: "1298",
+        created: "2011-11-11",
+        paymentopt: "Credit Card",
+        state: "Completed"
       },
       {
         firstname: "Lara",
         lastname: "Croft",
         email: "mscroft@muchpounds.uk",
-        created: "11/11/11",
-        paymentopt: "sofort",
-        state: "enrolled"
+        id: "6547",
+        created: "2011-11-11",
+        paymentopt: "Sofort",
+        state: "Enrolled"
       },
       {
         firstname: "Cammy",
         lastname: "White",
         email: "notadoll@shadaloo.th",
-        created: "11/11/11",
-        paymentopt: "ccard",
-        state: "completed"
+        id: "1248",
+        created: "2011-11-11",
+        paymentopt: "Credit Card",
+        state: "Completed"
       },
       {
         firstname: "Jill",
         lastname: "Valentine",
         email: "jillsandwich@stars.rc",
-        created: "11/11/11",
-        paymentopt: "ccard",
-        state: "enrolled"
+        id: "3469",
+        created: "2011-11-11",
+        paymentopt: "Credit Card",
+        state: "Enrolled"
       },
       {
         firstname: "Cloud",
         lastname: "Strife",
         email: "traumaboy@avalanche.md",
-        created: "11/11/11",
-        paymentopt: "cash",
-        state: "waitinglist"
+        id: "0345",
+        created: "2011-11-11",
+        paymentopt: "Cash",
+        state: "Waiting List"
       },
       {
         firstname: "Nina",
         lastname: "Williams",
         email: "fatalblonde@hitmen.io",
-        reated: "11/11/11",
-        paymentopt: "sofort",
-        state: "waitinglist"
+        id: "5496",
+        reated: "2011-11-11",
+        paymentopt: "Sofort",
+        state: "Waiting List"
       },
       {
         firstname: "Kazuya",
         lastname: "Mishima",
-        email: "diedaddydie@gcorp,jp",
-        created: "11/11/11",
-        paymentopt: "ccard",
-        state: "completed"
+        email: "diedaddydie@gcorp.jp",
+        id: "0354",
+        created: "2011-11-11",
+        paymentopt: "Credit Card",
+        state: "Completed"
       },
       {
         firstname: "Nathan",
         lastname: "Drake",
         email: "darealdrake@search.com",
-        created: "11/11/11",
-        paymentopt: "cash",
-        state: "enrolled"
+        id: "7841",
+        created: "2011-11-11",
+        paymentopt: "Cash",
+        state: "Enrolled"
       },
       {
         firstname: "Samus",
         lastname: "Aran",
         email: "cutiepie@space.es",
-        created: "11/11/11",
-        paymentopt: "sofort",
-        state: "enrolled"
+        id: "9255",
+        created: "2011-11-11",
+        paymentopt: "Sofort",
+        state: "Enrolled"
       },
 
       {
         firstname: "Mario",
         lastname: "Mario",
         email: "toomanyshrooms@donutplain.bw",
-        created: "11/11/11",
-        paymentopt: "cash",
-        state: "completed"
+        id: "1003",
+        created: "2011-11-11",
+        paymentopt: "Cash",
+        state: "Completed"
       },
 
       {
         firstname: "Mario",
         lastname: "Mario",
         email: "toomanyshrooms@donutplain.bw",
-        created: "11/11/11",
-        paymentopt: "cash",
-        state: "completed"
+        id: "2015",
+        created: "2011-11-11",
+        paymentopt: "Cash",
+        state: "Completed"
       }
     ],
 
@@ -252,12 +347,62 @@ export default {
   }),
 
   computed: {
+    cabecera() {
+      return [
+        {
+          text: "First Name",
+          value: "firstname",
+          filterable: false
+        } /*prop filterable para que no se encuentre en el search*/,
+
+        { text: "Last Name", value: "lastname", filterable: false },
+
+        { text: "Email", value: "email", filterable: true },
+
+        { text: "Id", value: "id" },
+
+        /* date picker filter */
+        {
+          text: "Created",
+          value: "created",
+          filterable: true,
+          filter: value => {
+            if (!this.dateSearch[0]) return true;
+            return this.dateSearch[0] <= value && this.dateSearch[1] >= value;
+          }
+        },
+
+        { text: "Payment", value: "paymentopt", filterable: false },
+
+        {
+          text: "State",
+          value: "state",
+          filter: value => {
+            if (!this.state[0]) return true;
+            return (
+              value == this.state[0] ||
+              value == this.state[1] ||
+              value == this.state[2]
+            );
+          }
+        },
+
+        /* edit / delete */
+        { text: "Actions", value: "actions", sortable: false }
+      ];
+    },
+
     tituloFormulario() {
       return this.indexEditar === -1 ? "New data" : "Edit data";
     }
   },
 
   methods: {
+    test() {
+      console.log(this.dateSearch[0]);
+      console.log(this.dateSearch[1]);
+    },
+
     editItem(item) {
       this.indexEditar = this.participantes.indexOf(item);
       this.participanteEditar = Object.assign({}, item); ///////////////////////////////////////////////////////////////
@@ -274,9 +419,9 @@ export default {
     close() {
       this.dialog = false;
       setTimeout(() => {
-        this.indexEditar = Object.assign({}, this.defaultPart);
+        this.participanteEditar = Object.assign({}, this.defaultPart);
         this.indexEditar = -1;
-      }, 300);
+      }, 3000);
     },
 
     save() {
@@ -293,13 +438,13 @@ export default {
 
     getPaymentIcon(item) {
       switch (item) {
-        case "cash":
+        case "Cash":
           return "mdi-cash";
 
-        case "ccard":
+        case "Credit Card":
           return "mdi-credit-card";
 
-        case "sofort":
+        case "Sofort":
           return "mdi-bank";
 
         default:
@@ -309,13 +454,13 @@ export default {
 
     getStateIcon(item) {
       switch (item) {
-        case "completed":
+        case "Completed":
           return { color: "orange", icon: "mdi-check" };
 
-        case "enrolled":
+        case "Enrolled":
           return { color: "green", icon: "mdi-check-all" };
 
-        case "waitinglist":
+        case "Waiting List":
           return { color: "grey", icon: "mdi-dots-horizontal" };
 
         default:
